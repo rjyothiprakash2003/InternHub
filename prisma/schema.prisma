@@ -1,0 +1,413 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  passwordHash  String
+  role          String    @default("STUDENT")
+  name          String
+  mobile        String?
+  isActive      Boolean   @default(true)
+  emailVerified Boolean   @default(false)
+  lastLoginAt   DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  deletedAt     DateTime?
+
+  studentProfile StudentProfile?
+  adminProfile   AdminProfile?
+  applications   Application[]
+  payments       Payment[]
+  notifications  Notification[]
+  documents      Document[]
+  auditLogs      AuditLog[]
+  tickets        SupportTicket[]
+  couponUses     CouponRedemption[]
+}
+
+model StudentProfile {
+  id                   String    @id @default(cuid())
+  userId               String    @unique
+  user                 User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  dateOfBirth          DateTime?
+  gender               String?
+  photoUrl             String?
+  address              String?
+  city                 String?
+  state                String?
+  country              String?   @default("India")
+  college              String?
+  collegeLocation      String?
+  course               String?
+  branch               String?
+  currentYear          String?
+  graduationYear       Int?
+  studentIdNumber      String?
+  technicalSkills      String    @default("[]")
+  softSkills           String    @default("[]")
+  programmingLanguages String    @default("[]")
+  tools                String    @default("[]")
+  preferredDomainId    String?
+  preferredType        String?
+  preferredDurationKey String?
+  resumeUrl            String?
+  linkedinUrl          String?
+  githubUrl            String?
+  portfolioUrl         String?
+  emergencyName        String?
+  emergencyRelation    String?
+  emergencyPhone       String?
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
+}
+
+model AdminProfile {
+  id        String   @id @default(cuid())
+  userId    String   @unique
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title     String   @default("Platform Administrator")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Domain {
+  id           String   @id @default(cuid())
+  slug         String   @unique
+  name         String
+  icon         String
+  shortDescription String
+  skills       String   @default("[]")
+  durationHint String   @default("4 Weeks – 6 Months")
+  isActive     Boolean  @default(true)
+  sortOrder    Int      @default(0)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  deletedAt    DateTime?
+
+  internships   Internship[]
+  applications  Application[]
+  testimonials  Testimonial[]
+}
+
+model Internship {
+  id               String   @id @default(cuid())
+  slug             String   @unique
+  title            String
+  domainId         String
+  domain           Domain   @relation(fields: [domainId], references: [id])
+  level            String
+  mode             String   @default("ONLINE")
+  description      String
+  skills           String   @default("[]")
+  learningOutcomes String   @default("[]")
+  eligibility      String   @default("Open to undergraduate and postgraduate students.")
+  includes         String   @default("[]")
+  seats            Int?
+  deadline         DateTime?
+  isActive         Boolean  @default(true)
+  isFeatured       Boolean  @default(false)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+  deletedAt        DateTime?
+
+  applications Application[]
+}
+
+model DurationRule {
+  id           String   @id @default(cuid())
+  key          String   @unique
+  label        String
+  unit         String
+  amount       Int
+  sortOrder    Int      @default(0)
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  pricingPlans PricingPlan[]
+}
+
+model PricingPlan {
+  id              String    @id @default(cuid())
+  durationKey     String
+  duration        DurationRule @relation(fields: [durationKey], references: [key])
+  originalPrice   Int
+  promotionalPrice Int
+  discountPercent Int
+  startDate       DateTime?
+  endDate         DateTime?
+  isActive        Boolean   @default(true)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+}
+
+model Discount {
+  id               String    @id @default(cuid())
+  name             String
+  couponCode       String    @unique
+  type             String    @default("PERCENT")
+  percent          Int?
+  fixedAmount      Int?
+  startDate        DateTime?
+  endDate          DateTime?
+  maxUses          Int?
+  usedCount        Int       @default(0)
+  minAmount        Int       @default(0)
+  eligibleDomains  String    @default("[]")
+  eligibleDurations String   @default("[]")
+  eligibility      String    @default("NEW_STUDENTS")
+  isActive         Boolean   @default(true)
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  redemptions CouponRedemption[]
+}
+
+model CouponRedemption {
+  id         String   @id @default(cuid())
+  discountId String
+  discount   Discount @relation(fields: [discountId], references: [id])
+  userId     String
+  user       User     @relation(fields: [userId], references: [id])
+  createdAt  DateTime @default(now())
+}
+
+model Application {
+  id              String    @id @default(cuid())
+  publicId        String    @unique
+  userId          String
+  user            User      @relation(fields: [userId], references: [id])
+  internshipId    String
+  internship      Internship @relation(fields: [internshipId], references: [id])
+  domainId        String
+  domain          Domain    @relation(fields: [domainId], references: [id])
+  durationKey     String
+  startDate       DateTime
+  endDate         DateTime
+  mode            String    @default("ONLINE")
+  status          String    @default("DRAFT")
+  professionalName String
+  college         String
+  course          String
+  branch          String
+  email           String
+  mobile          String
+  dateOfBirth     DateTime?
+  graduationYear  Int?
+  learningGoals   String?
+  motivation      String?
+  skillLevel      String?
+  resumeUrl       String?
+  linkedinUrl     String?
+  githubUrl       String?
+  portfolioUrl    String?
+  declaredAccurate Boolean  @default(false)
+  originalPrice   Int
+  discountPercent Int       @default(0)
+  discountAmount  Int       @default(0)
+  couponCode      String?
+  taxAmount       Int       @default(0)
+  finalAmount     Int
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  deletedAt       DateTime?
+
+  statusHistory ApplicationStatusHistory[]
+  payments      Payment[]
+  offerLetter   OfferLetter?
+  certificate   Certificate?
+  documents     Document[]
+}
+
+model ApplicationStatusHistory {
+  id            String      @id @default(cuid())
+  applicationId String
+  application   Application @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  fromStatus    String?
+  toStatus      String
+  note          String?
+  actorId       String?
+  createdAt     DateTime    @default(now())
+}
+
+model Payment {
+  id              String      @id @default(cuid())
+  publicId        String      @unique
+  userId          String
+  user            User        @relation(fields: [userId], references: [id])
+  applicationId   String
+  application     Application @relation(fields: [applicationId], references: [id])
+  amount          Int
+  currency        String      @default("INR")
+  status          String      @default("PENDING")
+  provider        String      @default("RAZORPAY_READY")
+  providerOrderId String?
+  providerPaymentId String?
+  providerSignature String?
+  invoiceNumber   String      @unique
+  refundStatus    String      @default("NONE")
+  refundAmount    Int         @default(0)
+  paidAt          DateTime?
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+}
+
+model OfferLetter {
+  id            String      @id @default(cuid())
+  publicId      String      @unique
+  applicationId String      @unique
+  application   Application @relation(fields: [applicationId], references: [id])
+  issueDate     DateTime    @default(now())
+  verificationUrl String
+  qrPayload     String
+  status        String      @default("VALID")
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+}
+
+model Certificate {
+  id              String      @id @default(cuid())
+  publicId        String      @unique
+  applicationId   String      @unique
+  application     Application @relation(fields: [applicationId], references: [id])
+  issueDate       DateTime    @default(now())
+  completionDate  DateTime
+  grade           String?
+  verificationUrl String
+  qrPayload       String
+  status          String      @default("VALID")
+  revokedAt       DateTime?
+  revokeReason    String?
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+
+  verifications CertificateVerification[]
+}
+
+model CertificateVerification {
+  id            String      @id @default(cuid())
+  certificateId String
+  certificate   Certificate @relation(fields: [certificateId], references: [id])
+  ipHash        String?
+  userAgent     String?
+  result        String
+  createdAt     DateTime    @default(now())
+}
+
+model Document {
+  id            String       @id @default(cuid())
+  userId        String
+  user          User         @relation(fields: [userId], references: [id])
+  applicationId String?
+  application   Application? @relation(fields: [applicationId], references: [id])
+  type          String
+  title         String
+  fileUrl       String?
+  verificationId String?
+  issueDate     DateTime?
+  status        String       @default("AVAILABLE")
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type      String
+  title     String
+  body      String
+  href      String?
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
+}
+
+model Testimonial {
+  id        String   @id @default(cuid())
+  name      String
+  college   String
+  domainId  String?
+  domain    Domain?  @relation(fields: [domainId], references: [id])
+  duration  String
+  rating    Int      @default(5)
+  quote     String
+  imageUrl  String?
+  isSample  Boolean  @default(true)
+  isActive  Boolean  @default(true)
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Faq {
+  id        String   @id @default(cuid())
+  question  String
+  answer    String
+  category  String   @default("General")
+  isActive  Boolean  @default(true)
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model WebsiteContent {
+  id        String   @id @default(cuid())
+  key       String   @unique
+  value     String
+  updatedAt DateTime @updatedAt
+}
+
+model SystemSetting {
+  id        String   @id @default(cuid())
+  key       String   @unique
+  value     String
+  updatedAt DateTime @updatedAt
+}
+
+model AuditLog {
+  id         String   @id @default(cuid())
+  actorId    String?
+  actor      User?    @relation(fields: [actorId], references: [id])
+  action     String
+  entityType String?
+  entityId   String?
+  metadata   String   @default("{}")
+  ip         String?
+  userAgent  String?
+  createdAt  DateTime @default(now())
+}
+
+model SupportTicket {
+  id        String   @id @default(cuid())
+  userId    String?
+  user      User?    @relation(fields: [userId], references: [id])
+  name      String
+  email     String
+  mobile    String?
+  subject   String
+  message   String
+  status    String   @default("OPEN")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model IdSequence {
+  key   String @id
+  value Int    @default(0)
+}
+
+model EmailTemplate {
+  id        String   @id @default(cuid())
+  slug      String   @unique
+  name      String
+  subject   String
+  body      String
+  updatedAt DateTime @updatedAt
+}
